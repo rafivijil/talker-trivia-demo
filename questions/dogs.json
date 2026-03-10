@@ -1,0 +1,14 @@
+{
+ "questions":[
+  {
+   "question":"Which dog breed is often used by police?",
+   "choices":["Beagle","German Shepherd","Pug"],
+   "answer":1
+  },
+  {
+   "question":"Which breed is known for pulling sleds?",
+   "choices":["Husky","Bulldog","Chihuahua"],
+   "answer":0
+  }
+ ]
+}

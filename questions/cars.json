@@ -1,0 +1,14 @@
+{
+ "questions":[
+  {
+   "question":"Which company makes the Civic?",
+   "choices":["Toyota","Honda","Ford"],
+   "answer":1
+  },
+  {
+   "question":"Which car brand uses a Horse as its logo?",
+   "choices":["Ferrari","Tesla","BMW"],
+   "answer":0
+  }
+ ]
+}

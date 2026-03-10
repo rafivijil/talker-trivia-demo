@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+            margin: 0; display: flex; justify-content: center; align-items: center; 
+            height: 100vh; background-size: cover; background-position: center;
+            transition: background-image 0.8s ease-in-out;
+        }
+        /* Glassmorphism Effect */
+        .quiz-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 30px; border-radius: 20px; width: 85%; max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3); text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .option-btn { 
+            display: block; width: 100%; padding: 12px; margin: 12px 0; 
+            border: 2px solid #007bff; border-radius: 50px; cursor: pointer;
+            background: white; color: #007bff; font-weight: bold; font-size: 16px;
+            transition: 0.3s;
+        }
+        .option-btn:hover { background: #007bff; color: white; transform: scale(1.02); }
+        #feedback { margin-top: 15px; font-weight: bold; font-size: 18px; }
+    </style>
+</head>
+<body id="bg-layer">
+    <div class="quiz-card" id="main-container">
+        <div id="question" style="font-size: 22px; font-weight: bold; margin-bottom: 20px;">Loading Trivia...</div>
+        <div id="options-list"></div>
+        <div id="feedback"></div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const topic = urlParams.get('topic') || 'cars';
+        
+        // Dynamic UI: Sets background based on the image in your /images folder
+        document.getElementById('bg-layer').style.backgroundImage = `url('images/${topic}.jpg')`;
+
+        let currentQuestion = 0;
+        let userScore = 0;
+        let quizData = [];
+
+        fetch(`questions/${topic}.json`)
+            .then(res => res.json())
+            .then(data => {
+                quizData = data.questions;
+                displayQuestion();
+            })
+            .catch(err => {
+                document.getElementById('question').innerText = "Topic data not found.";
+            });
+
+        function displayQuestion() {
+            const q = quizData[currentQuestion];
+            document.getElementById('question').innerText = q.question;
+            document.getElementById('feedback').innerText = "";
+            const list = document.getElementById('options-list');
+            list.innerHTML = "";
+
+            q.choices.forEach((choice, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = choice;
+                btn.onclick = () => {
+                    if(index === q.answer) {
+                        userScore++;
+                        document.getElementById('feedback').innerText = " Correct!";
+                        document.getElementById('feedback').style.color = "#28a745";
+                    } else {
+                        document.getElementById('feedback').innerText = " Incorrect";
+                        document.getElementById('feedback').style.color = "#dc3545";
+                    }
+                    
+                    setTimeout(() => {
+                        currentQuestion++;
+                        if(currentQuestion < quizData.length) {
+                            displayQuestion();
+                        } else {
+                            document.getElementById('main-container').innerHTML = 
+                                `<h2>Quiz Complete!</h2><p style="font-size:20px">Your Final Score: ${userScore} / ${quizData.length}</p>`;
+                        }
+                    }, 1200);
+                };
+                list.appendChild(btn);
+            });
+        }
+    </script>
+</body>
+</html>
