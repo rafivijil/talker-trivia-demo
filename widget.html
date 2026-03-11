@@ -1,93 +1,126 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <style>
+        :root {
+            --primary: #ff0066; /* Hot Pink from your GIF */
+            --bg: #f0f2f5;
+        }
         body { 
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
-            margin: 0; display: flex; justify-content: center; align-items: center; 
-            height: 100vh; background-size: cover; background-position: center;
-            transition: background-image 0.8s ease-in-out;
+            font-family: 'Inter', sans-serif; margin: 0; display: flex; 
+            justify-content: center; align-items: center; height: 100vh;
+            background: var(--bg); overflow: hidden;
         }
-        /* Glassmorphism Effect */
         .quiz-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(10px);
-            padding: 30px; border-radius: 20px; width: 85%; max-width: 400px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3); text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: white; padding: 40px; border-radius: 30px;
+            width: 85%; max-width: 450px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+        /* Tactile Squash-and-Stretch Buttons  */
         .option-btn { 
-            display: block; width: 100%; padding: 12px; margin: 12px 0; 
-            border: 2px solid #007bff; border-radius: 50px; cursor: pointer;
-            background: white; color: #007bff; font-weight: bold; font-size: 16px;
-            transition: 0.3s;
+            display: block; width: 100%; padding: 18px; margin: 15px 0; 
+            border: none; border-radius: 20px;
+            background: var(--primary); color: white; font-size: 18px; font-weight: 800;
+            cursor: pointer; position: relative;
+            box-shadow: 0 8px 0 #b30047, 0 15px 25px rgba(255, 0, 102, 0.3);
+            transition: all 0.1s ease;
+            transform: scale(1);
         }
-        .option-btn:hover { background: #007bff; color: white; transform: scale(1.02); }
-        #feedback { margin-top: 15px; font-weight: bold; font-size: 18px; }
+        /* The "Squish" Effect  */
+        .option-btn:active { 
+            transform: scale(0.95) translateY(4px); 
+            box-shadow: 0 2px 0 #b30047, 0 5px 10px rgba(255, 0, 102, 0.2);
+        }
+        .option-btn:hover { background: #ff1a75; transform: translateY(-2px); }
+
+        /* Animation for wrong answer (Shake) */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        .shake { animation: shake 0.3s ease-in-out; }
+
+        #question { font-size: 24px; font-weight: 900; margin-bottom: 25px; color: #1a1a1a; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
-<body id="bg-layer">
-    <div class="quiz-card" id="main-container">
-        <div id="question" style="font-size: 22px; font-weight: bold; margin-bottom: 20px;">Loading Trivia...</div>
+<body>
+    <div class="quiz-card" id="card">
+        <div id="question">Loading...</div>
         <div id="options-list"></div>
-        <div id="feedback"></div>
     </div>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const topic = urlParams.get('topic') || 'cars';
-        
-        // Dynamic UI: Sets background based on the image in your /images folder
-        document.getElementById('bg-layer').style.backgroundImage = `url('images/${topic}.jpg')`;
+        const params = new URLSearchParams(window.location.search);
+        const topic = params.get('topic') || 'cars';
+        let current = 0, score = 0, questions = [];
 
-        let currentQuestion = 0;
-        let userScore = 0;
-        let quizData = [];
+        fetch(`questions/${topic}.json`).then(res => res.json()).then(data => {
+            questions = data.questions;
+            render();
+        });
 
-        fetch(`questions/${topic}.json`)
-            .then(res => res.json())
-            .then(data => {
-                quizData = data.questions;
-                displayQuestion();
-            })
-            .catch(err => {
-                document.getElementById('question').innerText = "Topic data not found.";
+        function triggerConfetti() {
+            // High-fidelity celebratory confetti burst [cite: 3, 5]
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#ff0066', '#ffcc00', '#00ffcc']
             });
+        }
 
-        function displayQuestion() {
-            const q = quizData[currentQuestion];
-            document.getElementById('question').innerText = q.question;
-            document.getElementById('feedback').innerText = "";
+        function render() {
+            const q = questions[current];
+            const card = document.getElementById('card');
             const list = document.getElementById('options-list');
+            
+            document.getElementById('question').innerText = q.question;
             list.innerHTML = "";
 
             q.choices.forEach((choice, index) => {
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
                 btn.innerText = choice;
-                btn.onclick = () => {
+                btn.onclick = (e) => {
                     if(index === q.answer) {
-                        userScore++;
-                        document.getElementById('feedback').innerText = " Correct!";
-                        document.getElementById('feedback').style.color = "#28a745";
+                        score++;
+                        triggerConfetti(); // Immediate sensory feedback 
                     } else {
-                        document.getElementById('feedback').innerText = " Incorrect";
-                        document.getElementById('feedback').style.color = "#dc3545";
+                        card.classList.add('shake'); // Visual haptic for error 
+                        setTimeout(() => card.classList.remove('shake'), 300);
                     }
                     
+                    // Transition to next question
                     setTimeout(() => {
-                        currentQuestion++;
-                        if(currentQuestion < quizData.length) {
-                            displayQuestion();
+                        current++;
+                        if(current < questions.length) {
+                            card.style.transform = "translateX(-100vw)";
+                            setTimeout(() => {
+                                render();
+                                card.style.transform = "translateX(0)";
+                            }, 300);
                         } else {
-                            document.getElementById('main-container').innerHTML = 
-                                `<h2>Quiz Complete!</h2><p style="font-size:20px">Your Final Score: ${userScore} / ${quizData.length}</p>`;
+                            showFinalResults();
                         }
-                    }, 1200);
+                    }, 800);
                 };
                 list.appendChild(btn);
             });
+        }
+
+        function showFinalResults() {
+            // Final celebratory burst for completing the test [cite: 8, 9]
+            triggerConfetti();
+            document.getElementById('card').innerHTML = `
+                <h1 style="font-size: 60px;">🏆</h1>
+                <h2>Top Notch Performance!</h2>
+                <p style="font-size: 20px;">Score: ${score}/${questions.length}</p>
+                <button class="option-btn" onclick="location.reload()">REPLAY</button>
+            `;
         }
     </script>
 </body>
